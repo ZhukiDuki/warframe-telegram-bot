@@ -213,24 +213,21 @@ def get_api_data():
     if is_cache_valid():
         return CACHE['data']
     try:
-        logging.info("Попытка запроса к API Warframe")
-        response = requests.get(API_URL, timeout=20)
-        response.raise_for_status()  # Выбросит исключение при HTTP-ошибках
+        # Добавлены заголовки для обхода блокировки
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
+        }
+        response = requests.get(API_URL, timeout=20, headers=headers)  # Заголовки добавлены
+        response.raise_for_status()
         data = response.json()
         CACHE.update({
             'data': data,
             'expires': datetime.now() + timedelta(seconds=CACHE_TIMEOUT)
         })
-        logging.info("Данные успешно получены из API")
         return data
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Ошибка HTTP-запроса: {e}", exc_info=True)
-        return {}
-    except json.JSONDecodeError:
-        logging.error("Ошибка парсинга JSON-ответа от API")
-        return {}
     except Exception as e:
-        logging.error(f"Критическая ошибка получения данных: {e}", exc_info=True)
+        logging.error(f"Ошибка API: {e}", exc_info=True)
         return {}
 
 def check_api_update():
