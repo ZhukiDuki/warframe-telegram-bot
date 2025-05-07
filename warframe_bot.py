@@ -21,7 +21,7 @@ logging.basicConfig(
 
 # Конфигурация
 BOT_TOKEN = os.getenv("TELEGRAM_TOKEN")
-API_URL = 'https://api.warframestat.us/pc?language=ru'
+API_URL = 'https://api.allorigins.win/get?url=' + urllib.parse.quote('https://api.warframestat.us/pc?language=ru')
 CACHE_TIMEOUT = 120
 DATABASE = 'users.db'
 
@@ -213,14 +213,13 @@ def get_api_data():
     if is_cache_valid():
         return CACHE['data']
     try:
-        # Добавлены заголовки для обхода блокировки
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
         }
-        response = requests.get(API_URL, timeout=20, headers=headers)  # Заголовки добавлены
+        response = requests.get(API_URL, timeout=20, headers=headers)
         response.raise_for_status()
-        data = response.json()
+        data = response.json()['contents']  # Извлекаем содержимое через AllOrigins
         CACHE.update({
             'data': data,
             'expires': datetime.now() + timedelta(seconds=CACHE_TIMEOUT)
@@ -1157,7 +1156,7 @@ def handle_timezone_selection(message):
 
 # Инициализация
 init_db()
-scheduler.add_job(check_notifications, 'interval', minutes=5)
+scheduler.add_job(check_notifications, 'interval', minutes=10)
 scheduler.start()
 
 app = Flask(__name__)
