@@ -7,6 +7,9 @@ from dateutil import parser as date_parser
 import sqlite3
 import logging
 import json
+import os
+from flask import Flask
+import threading
 
 logging.basicConfig(
     level=logging.INFO,
@@ -17,7 +20,7 @@ logging.basicConfig(
 )
 
 # Конфигурация
-BOT_TOKEN = '7911182631:AAFdP2HUvX3QWXo34YC4UAA78cYXXv1ohuw'
+BOT_TOKEN = os.getenv("TELEGRAM_TOKEN")
 API_URL = 'https://api.warframestat.us/pc?language=ru'
 CACHE_TIMEOUT = 120
 DATABASE = 'users.db'
@@ -1145,6 +1148,21 @@ def handle_timezone_selection(message):
 init_db()
 scheduler.add_job(check_notifications, 'interval', minutes=5)
 scheduler.start()
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Бот работает!", 200
+
+def run_server():
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
+
+# Запуск сервера в отдельном потоке
+server_thread = threading.Thread(target=run_server)
+server_thread.daemon = True
+server_thread.start()
 
 # Запуск бота
 bot.infinity_polling()
