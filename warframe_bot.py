@@ -212,29 +212,43 @@ def get_api_data():
     global CACHE
     if is_cache_valid():
         return CACHE['data']
-    
     try:
-        response = requests.get(API_URL, timeout=10)
-        response.raise_for_status()
+        logging.info("Попытка запроса к API Warframe")
+        response = requests.get(API_URL, timeout=20)
+        response.raise_for_status()  # Выбросит исключение при HTTP-ошибках
         data = response.json()
-        
         CACHE.update({
             'data': data,
             'expires': datetime.now() + timedelta(seconds=CACHE_TIMEOUT)
         })
+        logging.info("Данные успешно получены из API")
         return data
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Ошибка HTTP-запроса: {e}", exc_info=True)
+        return {}
+    except json.JSONDecodeError:
+        logging.error("Ошибка парсинга JSON-ответа от API")
+        return {}
     except Exception as e:
-        logging.error(f"Ошибка API: {e}", exc_info=True)
+        logging.error(f"Критическая ошибка получения данных: {e}", exc_info=True)
         return {}
 
 def check_api_update():
     try:
-        response = requests.head(API_URL, timeout=5)
+        response = requests.head(API_URL, timeout=20)
         last_modified = response.headers.get('Last-Modified')
         if last_modified:
             logging.info(f"API обновлён: {last_modified}")
     except Exception as e:
         logging.warning(f"Ошибка проверки API: {e}")
+
+@bot.message_handler(commands=['test_api'])
+def test_api(message):
+    try:
+        response = requests.get(API_URL, timeout=10)
+        bot.send_message(message.chat.id, f"Статус: {response.status_code}\nОтвет: {response.text[:200]}...")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"Ошибка: {e}")
 
 # Форматирование даты
 def format_date(timestamp, timezone):
@@ -451,7 +465,7 @@ def start(message):
 def refresh_cache(message):
     global CACHE
     try:
-        response = requests.get(API_URL, timeout=10)
+        response = requests.get(API_URL, timeout=20)
         response.raise_for_status()
         CACHE.update({
             'data': response.json(),
